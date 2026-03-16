@@ -25,23 +25,29 @@ npm run lint         # Run ESLint
 
 **IMPORTANT: Never commit directly to main.**
 
-1. Always create a feature branch: `ai/issue-{N}` (where N is the GitHub issue number)
-2. Make commits on the feature branch with clear, imperative commit messages (max 72 chars)
-3. Push the branch and **open a Pull Request** targeting `main`
-4. PR title should be concise; PR body must include `Closes #{issue}` to auto-close the GitHub issue
-5. All AI commits must include: `Co-Authored-By: Paperclip <noreply@paperclip.ing>`
+1. Always create a feature branch: `ai/issue-{N}` (where N is the **GitHub** issue number, NOT the Paperclip AIC-N number)
+2. To find the GitHub issue number, run: `gh issue list --repo AI-First-Company/todo-app --label ai-task`
+3. Make commits on the feature branch with clear, imperative commit messages (max 72 chars)
+4. Push the branch and **open a Pull Request** targeting `main`
+5. PR body **must** include `Closes #{GitHub issue number}` to auto-link and auto-close the GitHub issue when merged
+6. **Use the GitHub issue number, not the Paperclip issue number.** For example, if the GitHub issue is #3, write `Closes #3` (not `Closes #19`)
+7. All AI commits must include: `Co-Authored-By: Paperclip <noreply@paperclip.ing>`
 
 Example workflow:
 ```bash
-git checkout -b ai/issue-2
+# First, find the GitHub issue number
+gh issue list --repo AI-First-Company/todo-app --label ai-task
+
+# Create branch using the GitHub issue number
+git checkout -b ai/issue-3
 # ... make changes ...
 git add <files>
-git commit -m "feat: add todo CRUD operations
+git commit -m "feat: add category filtering
 
-Closes #2
+Closes #3
 Co-Authored-By: Paperclip <noreply@paperclip.ing>"
-git push -u origin ai/issue-2
-gh pr create --title "feat: add todo CRUD" --body "Closes #2"
+git push -u origin ai/issue-3
+gh pr create --title "feat: add category filtering" --body "Closes #3"
 ```
 
 ## Conventions
