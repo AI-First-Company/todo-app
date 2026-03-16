@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { getTodos, addTodo } from "./store";
 import { Todo } from "@/types/todo";
 
 export async function GET() {
-  return NextResponse.json(getTodos());
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return NextResponse.json(getTodos(session.user.id));
 }
 
 export async function POST(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await request.json();
   const { title, priority, category, dueDate } = body;
 
@@ -24,6 +34,6 @@ export async function POST(request: NextRequest) {
     createdAt: Date.now(),
   };
 
-  addTodo(todo);
+  addTodo(todo, session.user.id);
   return NextResponse.json(todo, { status: 201 });
 }
