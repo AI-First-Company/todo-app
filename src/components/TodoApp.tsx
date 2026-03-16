@@ -4,22 +4,36 @@ import { useMemo, useState } from "react";
 import { useTodos } from "@/hooks/useTodos";
 import AddTodoForm from "./AddTodoForm";
 import TodoItem from "./TodoItem";
-import { Todo } from "@/types/todo";
+import { Todo, Category } from "@/types/todo";
 
 type FilterType = "all" | "active" | "completed";
+
+const CATEGORIES: Category[] = ["Work", "Personal", "Shopping", "Health", "Other"];
+
+const CATEGORY_ICONS: Record<Category, string> = {
+  Work: "💼",
+  Personal: "👤",
+  Shopping: "🛒",
+  Health: "❤️",
+  Other: "📌",
+};
 
 export default function TodoApp() {
   const { todos, hydrated, addTodo, toggleTodo, deleteTodo, editTodo, clearCompleted } =
     useTodos();
   const [filter, setFilter] = useState<FilterType>("all");
+  const [categoryFilter, setCategoryFilter] = useState<Category | "all">("all");
 
   const filteredTodos = useMemo(() => {
     return todos.filter((t) => {
-      if (filter === "active") return !t.completed;
-      if (filter === "completed") return t.completed;
-      return true;
+      const statusMatch =
+        filter === "active" ? !t.completed :
+        filter === "completed" ? t.completed :
+        true;
+      const categoryMatch = categoryFilter === "all" || t.category === categoryFilter;
+      return statusMatch && categoryMatch;
     });
-  }, [todos, filter]);
+  }, [todos, filter, categoryFilter]);
 
   const activeCount = todos.filter((t) => !t.completed).length;
   const completedCount = todos.filter((t) => t.completed).length;
@@ -49,25 +63,54 @@ export default function TodoApp() {
         </div>
 
         {/* Filter Tabs + Stats */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
-            {filters.map(({ label, value }) => (
+        <div className="flex flex-col gap-2 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
+              {filters.map(({ label, value }) => (
+                <button
+                  key={value}
+                  onClick={() => setFilter(value)}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    filter === value
+                      ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <span className="text-xs text-gray-400 dark:text-gray-500">
+              {activeCount} left
+            </span>
+          </div>
+
+          {/* Category Filter */}
+          <div className="flex flex-wrap gap-1">
+            <button
+              onClick={() => setCategoryFilter("all")}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                categoryFilter === "all"
+                  ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300"
+                  : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+              }`}
+            >
+              📂 All
+            </button>
+            {CATEGORIES.map((cat) => (
               <button
-                key={value}
-                onClick={() => setFilter(value)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  filter === value
-                    ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  categoryFilter === cat
+                    ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300"
+                    : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
                 }`}
               >
-                {label}
+                {CATEGORY_ICONS[cat]} {cat}
               </button>
             ))}
           </div>
-          <span className="text-xs text-gray-400 dark:text-gray-500">
-            {activeCount} left
-          </span>
         </div>
 
         {/* Todo List */}
