@@ -25,14 +25,27 @@ export default function TodoApp() {
   const [categoryFilter, setCategoryFilter] = useState<Category | "all">("all");
 
   const filteredTodos = useMemo(() => {
-    return todos.filter((t) => {
-      const statusMatch =
-        filter === "active" ? !t.completed :
-        filter === "completed" ? t.completed :
-        true;
-      const categoryMatch = categoryFilter === "all" || t.category === categoryFilter;
-      return statusMatch && categoryMatch;
-    });
+    return todos
+      .filter((t) => {
+        const statusMatch =
+          filter === "active" ? !t.completed :
+          filter === "completed" ? t.completed :
+          true;
+        const categoryMatch = categoryFilter === "all" || t.category === categoryFilter;
+        return statusMatch && categoryMatch;
+      })
+      .sort((a, b) => {
+        // Items with due dates come before items without
+        if (a.dueDate && !b.dueDate) return -1;
+        if (!a.dueDate && b.dueDate) return 1;
+        // Both have due dates: sort soonest first
+        if (a.dueDate && b.dueDate) {
+          const diff = a.dueDate.localeCompare(b.dueDate);
+          if (diff !== 0) return diff;
+        }
+        // Fall back to creation date (newest first)
+        return b.createdAt - a.createdAt;
+      });
   }, [todos, filter, categoryFilter]);
 
   const activeCount = todos.filter((t) => !t.completed).length;
