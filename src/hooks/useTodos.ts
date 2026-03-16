@@ -3,65 +3,143 @@
 import { useState, useEffect, useCallback } from "react";
 import { Todo } from "@/types/todo";
 
-const STORAGE_KEY = "todos";
-
 export function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
+  // Load todos from API on mount; fall back to localStorage if API is unavailable
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setTodos(JSON.parse(stored));
+    async function load() {
+      try {
+        const res = await fetch("/api/todos");
+        if (res.ok) {
+          const data: Todo[] = await res.json();
+          // If API store is empty, seed from localStorage
+          if (data.length === 0 && typeof window !== "undefined") {
+            const stored = localStorage.getItem("todos");
+            if (stored) {
+              const local: Todo[] = JSON.parse(stored);
+              for (const todo of [...local].reverse()) {
+                await fetch("/api/todos", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(todo),
+                });
+              }
+              setTodos(local);
+              setHydrated(true);
+              return;
+            }
+          }
+          setTodos(data);
+        }
+      } catch {
+        // fallback to localStorage
+        if (typeof window !== "undefined") {
+          const stored = localStorage.getItem("todos");
+          if (stored) setTodos(JSON.parse(stored));
+        }
+      } finally {
+        setHydrated(true);
       }
-    } catch {
-      // ignore parse errors
     }
-    setHydrated(true);
+    load();
   }, []);
 
+  // Mirror to localStorage for offline resilience
   useEffect(() => {
     if (hydrated && typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+      localStorage.setItem("todos", JSON.stringify(todos));
     }
   }, [todos, hydrated]);
 
-  const addTodo = useCallback((title: string, priority: Todo["priority"]) => {
-    const todo: Todo = {
-      id: crypto.randomUUID(),
-      title: title.trim(),
-      completed: false,
-      priority,
-      createdAt: Date.now(),
-    };
-    setTodos((prev) => [todo, ...prev]);
-  }, []);
-
-  const toggleTodo = useCallback((id: string) => {
-    setTodos((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
-    );
-  }, []);
-
-  const deleteTodo = useCallback((id: string) => {
-    setTodos((prev) => prev.filter((t) => t.id !== id));
-  }, []);
-
-  const editTodo = useCallback(
-    (id: string, title: string, priority: Todo["priority"]) => {
-      setTodos((prev) =>
-        prev.map((t) =>
-          t.id === id ? { ...t, title: title.trim(), priority } : t
-        )
-      );
+  const addTodo = useCallback(
+    async (
+      title: string,
+      priority: Todo["priority"],
+      category?: Todo["category"],
+      dueDate?: string
+    ) => {
+      try {
+        const res = await fetch("/api/todos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, priority, category, dueDate }),
+        });
+        if (res.ok) {
+          const todo: Todo = await res.json();
+          setTodos((prev) => [todo, ...prev]);
+          return;
+        }
+      } catch {
+        // fallback: optimistic local add
+      }
+      const todo: Todo = {
+        id: crypto.randomUUID(),
+        title: title.trim(),
+        completed: false,
+        priority,
+        category,
+        dueDate,
+        createdAt: Date.now(),
+      };
+      setTodos((prev) => [todo, ...prev]);
     },
     []
   );
 
-  const clearCompleted = useCallback(() => {
-    setTodos((prev) => prev.filter((t) => !t.completed));
+  const toggleTodo = useCallback(async (id: string) => {
+    setTodos((prev) => {
+      const updated = prev.map((t) =>
+        t.id === id ? { ...t, completed: !t.completed } : t
+      );
+      const todo = updated.find((t) => t.id === id);
+      if (todo) {
+        fetch(`/api/todos/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ completed: todo.completed }),
+        }).catch(() => {});
+      }
+      return updated;
+    });
+  }, []);
+
+  const deleteTodo = useCallback(async (id: string) => {
+    setTodos((prev) => prev.filter((t) => t.id !== id));
+    fetch(`/api/todos/${id}`, { method: "DELETE" }).catch(() => {});
+  }, []);
+
+  const editTodo = useCallback(
+    async (
+      id: string,
+      title: string,
+      priority: Todo["priority"],
+      category?: Todo["category"],
+      dueDate?: string
+    ) => {
+      setTodos((prev) =>
+        prev.map((t) =>
+          t.id === id ? { ...t, title: title.trim(), priority, category, dueDate } : t
+        )
+      );
+      fetch(`/api/todos/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.trim(), priority, category, dueDate }),
+      }).catch(() => {});
+    },
+    []
+  );
+
+  const clearCompleted = useCallback(async () => {
+    setTodos((prev) => {
+      const toDelete = prev.filter((t) => t.completed);
+      toDelete.forEach((t) => {
+        fetch(`/api/todos/${t.id}`, { method: "DELETE" }).catch(() => {});
+      });
+      return prev.filter((t) => !t.completed);
+    });
   }, []);
 
   return {
