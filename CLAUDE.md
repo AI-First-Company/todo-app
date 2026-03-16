@@ -60,6 +60,33 @@ gh pr create --title "feat: add category filtering" --body "Closes #3"
 - Prefer `const` over `let`; avoid `var`
 - Use async/await over callbacks
 
+## PR Review Feedback Loop
+
+When the QA Engineer requests changes on your PR:
+
+1. **Check for review feedback** on your open PRs before starting new work:
+   ```bash
+   gh pr list --repo AI-First-Company/todo-app --author @me --json number,title,reviewDecision
+   ```
+2. For any PR with `CHANGES_REQUESTED`:
+   ```bash
+   gh pr view <NUMBER> --repo AI-First-Company/todo-app --json reviews --jq '.reviews[-1].body'
+   ```
+3. Read the QA feedback carefully and fix every issue mentioned
+4. Run `npm run build` and `npm run lint` to verify fixes
+5. Commit the fixes to the **same branch** and push:
+   ```bash
+   git add <files>
+   git commit -m "fix: address QA review feedback"
+   git push
+   ```
+6. Post a comment on the PR:
+   ```bash
+   gh pr comment <NUMBER> --repo AI-First-Company/todo-app --body "Fixes pushed — ready for re-review."
+   ```
+
+**Priority: Always fix review feedback before starting new issues.**
+
 ## Never Do This
 
 - Do not commit or push directly to `main` — always use a feature branch + PR
