@@ -11,12 +11,12 @@ export async function PUT(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await params;
-  const body = await request.json();
+  const { title, completed, priority, category, dueDate } = await request.json();
 
   try {
     const todo = await prisma.todo.update({
       where: { id, userId: session.user.id },
-      data: body,
+      data: { title, completed, priority, category, dueDate },
     });
     return NextResponse.json(todo);
   } catch {
