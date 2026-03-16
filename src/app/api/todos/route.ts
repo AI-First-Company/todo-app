@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { getTodos, addTodo } from "./store";
-import { Todo } from "@/types/todo";
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  return NextResponse.json(getTodos(session.user.id));
+  const todos = await prisma.todo.findMany({
+    where: { userId: session.user.id },
+    orderBy: { createdAt: "desc" },
+  });
+  return NextResponse.json(todos);
 }
 
 export async function POST(request: NextRequest) {
@@ -24,16 +27,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "title is required" }, { status: 400 });
   }
 
-  const todo: Todo = {
-    id: crypto.randomUUID(),
-    title: title.trim(),
-    completed: false,
-    priority: priority ?? "medium",
-    category: category ?? undefined,
-    dueDate: dueDate ?? undefined,
-    createdAt: Date.now(),
-  };
+  const todo = await prisma.todo.create({
+    data: {
+      title: title.trim(),
+      completed: false,
+      priority: priority ?? "medium",
+      category: category ?? null,
+      dueDate: dueDate ?? null,
+      userId: session.user.id,
+    },
+  });
 
-  addTodo(todo, session.user.id);
   return NextResponse.json(todo, { status: 201 });
 }

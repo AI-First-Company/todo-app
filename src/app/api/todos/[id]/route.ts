@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { updateTodo, deleteTodo } from "../store";
+import { prisma } from "@/lib/prisma";
 
 export async function PUT(
   request: NextRequest,
@@ -12,11 +12,16 @@ export async function PUT(
   }
   const { id } = await params;
   const body = await request.json();
-  const updated = updateTodo(id, body, session.user.id);
-  if (!updated) {
+
+  try {
+    const todo = await prisma.todo.update({
+      where: { id, userId: session.user.id },
+      data: body,
+    });
+    return NextResponse.json(todo);
+  } catch {
     return NextResponse.json({ error: "Todo not found" }, { status: 404 });
   }
-  return NextResponse.json(updated);
 }
 
 export async function DELETE(
@@ -28,9 +33,11 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await params;
-  const deleted = deleteTodo(id, session.user.id);
-  if (!deleted) {
+
+  try {
+    await prisma.todo.delete({ where: { id, userId: session.user.id } });
+    return new NextResponse(null, { status: 204 });
+  } catch {
     return NextResponse.json({ error: "Todo not found" }, { status: 404 });
   }
-  return new NextResponse(null, { status: 204 });
 }
