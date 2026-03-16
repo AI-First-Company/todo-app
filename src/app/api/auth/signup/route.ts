@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createUser } from "@/lib/userStore";
+import bcrypt from "bcryptjs";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   const { email, name, password } = await request.json();
@@ -15,10 +16,16 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const user = await createUser(email, name, password);
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: { email, name, passwordHash },
+    });
     return NextResponse.json({ id: user.id, email: user.email, name: user.name }, { status: 201 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Failed to create user";
-    return NextResponse.json({ error: message }, { status: 409 });
+    const code = (err as { code?: string }).code;
+    if (code === "P2002") {
+      return NextResponse.json({ error: "User already exists" }, { status: 409 });
+    }
+    return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
   }
 }

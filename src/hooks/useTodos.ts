@@ -3,55 +3,35 @@
 import { useState, useEffect, useCallback } from "react";
 import { Todo } from "@/types/todo";
 
+function redirectToLogin() {
+  window.location.href = "/login";
+}
+
 export function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
-  // Load todos from API on mount; fall back to localStorage if API is unavailable
+  // Load todos from API on mount
   useEffect(() => {
     async function load() {
       try {
         const res = await fetch("/api/todos");
+        if (res.status === 401) {
+          redirectToLogin();
+          return;
+        }
         if (res.ok) {
           const data: Todo[] = await res.json();
-          // If API store is empty, seed from localStorage
-          if (data.length === 0 && typeof window !== "undefined") {
-            const stored = localStorage.getItem("todos");
-            if (stored) {
-              const local: Todo[] = JSON.parse(stored);
-              for (const todo of [...local].reverse()) {
-                await fetch("/api/todos", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(todo),
-                });
-              }
-              setTodos(local);
-              setHydrated(true);
-              return;
-            }
-          }
           setTodos(data);
         }
       } catch {
-        // fallback to localStorage
-        if (typeof window !== "undefined") {
-          const stored = localStorage.getItem("todos");
-          if (stored) setTodos(JSON.parse(stored));
-        }
+        // network error — leave empty
       } finally {
         setHydrated(true);
       }
     }
     load();
   }, []);
-
-  // Mirror to localStorage for offline resilience
-  useEffect(() => {
-    if (hydrated && typeof window !== "undefined") {
-      localStorage.setItem("todos", JSON.stringify(todos));
-    }
-  }, [todos, hydrated]);
 
   const addTodo = useCallback(
     async (
@@ -60,30 +40,19 @@ export function useTodos() {
       category?: Todo["category"],
       dueDate?: string
     ) => {
-      try {
-        const res = await fetch("/api/todos", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, priority, category, dueDate }),
-        });
-        if (res.ok) {
-          const todo: Todo = await res.json();
-          setTodos((prev) => [todo, ...prev]);
-          return;
-        }
-      } catch {
-        // fallback: optimistic local add
+      const res = await fetch("/api/todos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, priority, category, dueDate }),
+      });
+      if (res.status === 401) {
+        redirectToLogin();
+        return;
       }
-      const todo: Todo = {
-        id: crypto.randomUUID(),
-        title: title.trim(),
-        completed: false,
-        priority,
-        category,
-        dueDate,
-        createdAt: new Date().toISOString(),
-      };
-      setTodos((prev) => [todo, ...prev]);
+      if (res.ok) {
+        const todo: Todo = await res.json();
+        setTodos((prev) => [todo, ...prev]);
+      }
     },
     []
   );
@@ -99,6 +68,8 @@ export function useTodos() {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ completed: todo.completed }),
+        }).then((res) => {
+          if (res.status === 401) redirectToLogin();
         }).catch(() => {});
       }
       return updated;
@@ -107,7 +78,9 @@ export function useTodos() {
 
   const deleteTodo = useCallback(async (id: string) => {
     setTodos((prev) => prev.filter((t) => t.id !== id));
-    fetch(`/api/todos/${id}`, { method: "DELETE" }).catch(() => {});
+    fetch(`/api/todos/${id}`, { method: "DELETE" }).then((res) => {
+      if (res.status === 401) redirectToLogin();
+    }).catch(() => {});
   }, []);
 
   const editTodo = useCallback(
@@ -127,6 +100,8 @@ export function useTodos() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: title.trim(), priority, category, dueDate }),
+      }).then((res) => {
+        if (res.status === 401) redirectToLogin();
       }).catch(() => {});
     },
     []
@@ -136,7 +111,9 @@ export function useTodos() {
     setTodos((prev) => {
       const toDelete = prev.filter((t) => t.completed);
       toDelete.forEach((t) => {
-        fetch(`/api/todos/${t.id}`, { method: "DELETE" }).catch(() => {});
+        fetch(`/api/todos/${t.id}`, { method: "DELETE" }).then((res) => {
+          if (res.status === 401) redirectToLogin();
+        }).catch(() => {});
       });
       return prev.filter((t) => !t.completed);
     });
