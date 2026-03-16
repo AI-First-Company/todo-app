@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useTodos } from "@/hooks/useTodos";
 import AddTodoForm from "./AddTodoForm";
 import TodoItem from "./TodoItem";
+import ThemeToggle from "./ThemeToggle";
 import { Todo, Category } from "@/types/todo";
 
 type FilterType = "all" | "active" | "completed";
@@ -52,24 +53,27 @@ export default function TodoApp() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-1">
-            <h1 className="text-4xl font-extrabold text-indigo-600 tracking-tight">
+            <h1 className="text-4xl font-extrabold text-indigo-600 dark:text-indigo-400 tracking-tight">
               ✅ Todo App
             </h1>
-            {session?.user && (
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-600">
-                  {session.user.name ?? session.user.email}
-                </span>
-                <button
-                  onClick={() => signOut({ callbackUrl: "/login" })}
-                  className="text-xs text-gray-400 hover:text-red-500 transition-colors"
-                >
-                  Sign out
-                </button>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+              {session?.user && (
+                <>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {session.user.name ?? session.user.email}
+                  </span>
+                  <button
+                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    Sign out
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Your tasks, saved to your account
           </p>
         </div>
@@ -144,17 +148,18 @@ export default function TodoApp() {
             </p>
           </div>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
             {filteredTodos.map((todo: Todo) => (
-              <TodoItem
-                key={todo.id}
-                todo={todo}
-                onToggle={toggleTodo}
-                onDelete={deleteTodo}
-                onEdit={editTodo}
-              />
+              <div key={todo.id} className="todo-item-enter">
+                <TodoItem
+                  todo={todo}
+                  onToggle={toggleTodo}
+                  onDelete={deleteTodo}
+                  onEdit={editTodo}
+                />
+              </div>
             ))}
-          </ul>
+          </div>
         )}
 
         {/* Footer actions */}
