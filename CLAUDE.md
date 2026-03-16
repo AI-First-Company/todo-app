@@ -85,7 +85,28 @@ When the QA Engineer requests changes on your PR:
    gh pr comment <NUMBER> --repo AI-First-Company/todo-app --body "Fixes pushed — ready for re-review."
    ```
 
-**Priority: Always fix review feedback before starting new issues.**
+## Merge Conflict Resolution
+
+Before starting new work, check if any of your open PRs have merge conflicts:
+
+1. **Check PR status:**
+   ```bash
+   gh pr list --repo AI-First-Company/todo-app --author @me --json number,title,mergeable
+   ```
+2. For any PR with conflicts:
+   ```bash
+   git fetch origin
+   git checkout <branch>
+   git rebase origin/main
+   # Resolve any conflicts in the files
+   git add <resolved-files>
+   git rebase --continue
+   npm run build && npm run lint   # verify nothing broke
+   git push --force-with-lease
+   gh pr comment <NUMBER> --repo AI-First-Company/todo-app --body "Conflicts resolved — ready for re-review."
+   ```
+
+**Priority: Fix review feedback and merge conflicts before starting new issues.**
 
 ## Never Do This
 
