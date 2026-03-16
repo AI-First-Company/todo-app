@@ -64,15 +64,18 @@ gh pr create --title "feat: add category filtering" --body "Closes #3"
 
 When the QA Engineer requests changes on your PR:
 
-1. **Check for review feedback** on your open PRs before starting new work:
+1. **Check for review feedback** on your open PRs before starting new work. QA may post feedback as **comments** or as **reviews**, so check both:
    ```bash
-   gh pr list --repo AI-First-Company/todo-app --author @me --json number,title,reviewDecision
+   # Check review status
+   gh pr list --repo AI-First-Company/todo-app --author @me --state open --json number,title,reviewDecision
+   # Check comments for QA feedback on each open PR
+   gh pr view <NUMBER> --repo AI-First-Company/todo-app --json comments --jq '[.comments[] | select(.body | test("CHANGES REQUESTED|MERGE CONFLICT"))] | length'
    ```
-2. For any PR with `CHANGES_REQUESTED`:
+2. For any PR with `CHANGES_REQUESTED` in reviewDecision **OR** in a comment, read the full feedback:
    ```bash
-   gh pr view <NUMBER> --repo AI-First-Company/todo-app --json reviews --jq '.reviews[-1].body'
+   gh pr view <NUMBER> --repo AI-First-Company/todo-app --json reviews,comments
    ```
-3. Read the QA feedback carefully and fix every issue mentioned
+3. Read the QA feedback carefully and fix **every** issue mentioned
 4. Run `npm run build` and `npm run lint` to verify fixes
 5. Commit the fixes to the **same branch** and push:
    ```bash
