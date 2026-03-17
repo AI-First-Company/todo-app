@@ -81,7 +81,7 @@ export function useTodos() {
         priority,
         category,
         dueDate,
-        createdAt: Date.now(),
+        createdAt: new Date().toISOString(),
       };
       setTodos((prev) => [todo, ...prev]);
     },
