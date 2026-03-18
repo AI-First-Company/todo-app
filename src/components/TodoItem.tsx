@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Todo, Category } from "@/types/todo";
+import MarkdownRenderer from "./MarkdownRenderer";
 
 const PRIORITY_COLORS = {
   low: "bg-green-100 text-green-700 border-green-300",
@@ -39,6 +40,7 @@ export default function TodoItem({
   onToggle,
   onDelete,
   onEdit,
+  onUpdateNotes,
 }: TodoItemProps) {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(todo.title);
@@ -46,6 +48,15 @@ export default function TodoItem({
   const [editCategory, setEditCategory] = useState<Todo["category"] | "">(todo.category ?? "");
   const [editDueDate, setEditDueDate] = useState(todo.dueDate ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
+  const [showNotes, setShowNotes] = useState(false);
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesText, setNotesText] = useState(todo.notes ?? "");
+  const notesRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => { if (editingNotes) notesRef.current?.focus(); }, [editingNotes]);
+  useEffect(() => { setNotesText(todo.notes ?? ""); }, [todo.notes]);
+  const saveNotes = () => { onUpdateNotes?.(todo.id, notesText); setEditingNotes(false); };
+  const cancelNotes = () => { setNotesText(todo.notes ?? ""); setEditingNotes(false); };
+
 
   useEffect(() => {
     if (editing) inputRef.current?.focus();
@@ -71,15 +82,17 @@ export default function TodoItem({
     setEditing(false);
   };
 
+  const hasNotes = !!(todo.notes && todo.notes.trim());
   const overdue = !todo.completed && isOverdue(todo.dueDate);
   const dueToday = !todo.completed && isDueToday(todo.dueDate);
 
   return (
-    <li className={`flex items-start gap-3 p-4 rounded-xl shadow-sm border group transition-all hover:shadow-md ${
+    <li className={`flex flex-col rounded-xl shadow-sm border group transition-all hover:shadow-md ${
       overdue
         ? "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800"
         : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700"
     }`}>
+      <div className="flex items-start gap-3 p-4">
       {/* Checkbox */}
       <button
         onClick={() => onToggle(todo.id)}
@@ -179,7 +192,8 @@ export default function TodoItem({
       {/* Actions */}
       {!editing && (
         <div className="flex-shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
+          <button onClick={() => { setShowNotes(!showNotes); if (!showNotes && !hasNotes) setEditingNotes(true); }} aria-label={showNotes ? "Hide notes" : "Show notes"} className={`p-1.5 rounded-lg transition-colors ${hasNotes ? "text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-gray-700" : "text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-gray-700"}`}><svg className="w-4 h-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg></button>
+                <button
             onClick={() => setEditing(true)}
             aria-label="Edit todo"
             className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-gray-700 transition-colors"
@@ -199,6 +213,10 @@ export default function TodoItem({
           </button>
         </div>
       )}
+
+      </div>
+      {hasNotes && !showNotes && (<button onClick={() => setShowNotes(true)} className="px-4 pb-3 -mt-1 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-indigo-500 transition-colors text-left"><svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg><span className="truncate">{todo.notes!.split("\n")[0].slice(0, 60)}{todo.notes!.length > 60 ? "..." : ""}</span></button>)}
+      {showNotes && (<div className="px-4 pb-3 border-t border-gray-100 dark:border-gray-700 pt-3">{editingNotes ? (<div className="flex flex-col gap-2"><textarea ref={notesRef} value={notesText} onChange={(e) => setNotesText(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") cancelNotes(); }} placeholder='Add notes... (supports **bold**, *italic*, `code`, lists, and headings)' rows={4} className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-white resize-y font-mono" /><div className="flex gap-2 items-center"><button onClick={saveNotes} className="text-xs px-3 py-1 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600">Save Notes</button><button onClick={cancelNotes} className="text-xs px-3 py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200">Cancel</button><span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">Markdown supported</span></div></div>) : (<div>{hasNotes ? (<div onClick={() => setEditingNotes(true)} className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 rounded-lg p-2 -m-2 transition-colors"><MarkdownRenderer content={todo.notes!} /></div>) : (<button onClick={() => setEditingNotes(true)} className="text-xs text-gray-400 hover:text-indigo-500 transition-colors">Click to add notes...</button>)}<div className="flex justify-end mt-2 gap-2"><button onClick={() => setEditingNotes(true)} className="text-xs text-gray-400 hover:text-indigo-500 transition-colors">Edit</button><button onClick={() => setShowNotes(false)} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">Close</button></div></div>)}</div>)}
     </li>
   );
 }

@@ -24,6 +24,7 @@ model Todo {
   priority  String   @default("medium")
   category  String?
   dueDate   String?
+  notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   userId    String?
@@ -37,4 +38,6 @@ model Template {
   category  String?
   createdAt DateTime @default(now())
   userId    String?
+
+  @@index([userId])
 }

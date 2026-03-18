@@ -24,7 +24,7 @@ const CATEGORY_ICONS: Record<Category, string> = {
 
 export default function TodoApp() {
   const { data: session } = useSession();
-  const { todos, hydrated, addTodo, toggleTodo, deleteTodo, editTodo, clearCompleted } =
+  const { todos, hydrated, addTodo, toggleTodo, deleteTodo, editTodo, updateNotes, clearCompleted } =
     useTodos();
   const { templates, addTemplate, deleteTemplate } = useTemplates();
   const handleUseTemplate = (template: Template) => { addTodo(template.title, template.priority, template.category); };
@@ -51,7 +51,7 @@ export default function TodoApp() {
           if (diff !== 0) return diff;
         }
         // Fall back to creation date (newest first)
-        return b.createdAt - a.createdAt;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
   }, [todos, filter, categoryFilter]);
 
@@ -174,6 +174,7 @@ export default function TodoApp() {
                   onToggle={toggleTodo}
                   onDelete={deleteTodo}
                   onEdit={editTodo}
+                      onUpdateNotes={updateNotes}
                 />
               </div>
             ))}
