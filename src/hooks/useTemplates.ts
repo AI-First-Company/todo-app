@@ -29,7 +29,7 @@ export function useTemplates() {
       title: string,
       priority: Template["priority"],
       category?: Template["category"]
-    ) => {
+    ): Promise<Template | null> => {
       try {
         const res = await fetch("/api/templates", {
           method: "POST",
@@ -42,26 +42,25 @@ export function useTemplates() {
           return template;
         }
       } catch {
-        // fallback: optimistic local add
+        // network error
       }
-      const template: Template = {
-        id: crypto.randomUUID(),
-        name: name.trim(),
-        title: title.trim(),
-        priority,
-        category,
-        createdAt: new Date().toISOString(),
-      };
-      setTemplates((prev) => [template, ...prev]);
-      return template;
+      return null;
     },
     []
   );
 
   const deleteTemplate = useCallback(async (id: string) => {
+    const previous = templates;
     setTemplates((prev) => prev.filter((t) => t.id !== id));
-    fetch("/api/templates/" + id, { method: "DELETE" }).catch(() => {});
-  }, []);
+    try {
+      const res = await fetch("/api/templates/" + id, { method: "DELETE" });
+      if (!res.ok) {
+        setTemplates(previous);
+      }
+    } catch {
+      setTemplates(previous);
+    }
+  }, [templates]);
 
   return { templates, loaded, addTemplate, deleteTemplate };
 }

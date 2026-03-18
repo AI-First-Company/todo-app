@@ -37,4 +37,6 @@ model Template {
   category  String?
   createdAt DateTime @default(now())
   userId    String?
+
+  @@index([userId])
 }

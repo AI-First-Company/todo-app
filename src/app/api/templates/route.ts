@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import type { Priority, Category } from "@/types/todo";
+
+const VALID_PRIORITIES: Priority[] = ["low", "medium", "high"];
+const VALID_CATEGORIES: Category[] = ["Work", "Personal", "Shopping", "Health", "Other"];
 
 export async function GET() {
   const session = await auth();
@@ -30,11 +34,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "title is required" }, { status: 400 });
   }
 
+  const resolvedPriority = priority ?? "medium";
+  if (!VALID_PRIORITIES.includes(resolvedPriority)) {
+    return NextResponse.json(
+      { error: `Invalid priority. Must be one of: ${VALID_PRIORITIES.join(", ")}` },
+      { status: 400 }
+    );
+  }
+
+  if (category != null && !VALID_CATEGORIES.includes(category)) {
+    return NextResponse.json(
+      { error: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(", ")}` },
+      { status: 400 }
+    );
+  }
+
   const template = await prisma.template.create({
     data: {
       name: name.trim(),
       title: title.trim(),
-      priority: priority ?? "medium",
+      priority: resolvedPriority,
       category: category ?? null,
       userId: session.user.id,
     },

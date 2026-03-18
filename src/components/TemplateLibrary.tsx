@@ -14,7 +14,7 @@ const PRIORITY_LABELS: Record<Priority, string> = {
 interface TemplateLibraryProps {
   templates: Template[];
   onUseTemplate: (template: Template) => void;
-  onAddTemplate: (name: string, title: string, priority: Priority, category?: Category) => void;
+  onAddTemplate: (name: string, title: string, priority: Priority, category?: Category) => Promise<Template | null>;
   onDeleteTemplate: (id: string) => void;
 }
 
@@ -26,15 +26,22 @@ export default function TemplateLibrary({ templates, onUseTemplate, onAddTemplat
   const [priority, setPriority] = useState<Priority>("medium");
   const [category, setCategory] = useState<Category | "">("");
 
-  const handleSaveTemplate = (e: React.FormEvent) => {
+  const [error, setError] = useState("");
+
+  const handleSaveTemplate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !title.trim()) return;
-    onAddTemplate(name.trim(), title.trim(), priority, category || undefined);
-    setName("");
-    setTitle("");
-    setPriority("medium");
-    setCategory("");
-    setShowForm(false);
+    setError("");
+    const result = await onAddTemplate(name.trim(), title.trim(), priority, category || undefined);
+    if (result) {
+      setName("");
+      setTitle("");
+      setPriority("medium");
+      setCategory("");
+      setShowForm(false);
+    } else {
+      setError("Failed to save template. Please try again.");
+    }
   };
 
   return (
@@ -108,6 +115,9 @@ export default function TemplateLibrary({ templates, onUseTemplate, onAddTemplat
                   ))}
                 </select>
               </div>
+              {error && (
+                <p className="text-xs text-red-500">{error}</p>
+              )}
               <button
                 type="submit"
                 disabled={!name.trim() || !title.trim()}
