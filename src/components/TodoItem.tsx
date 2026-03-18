@@ -40,6 +40,7 @@ interface TodoItemProps {
     category?: Todo["category"],
     dueDate?: string
   ) => void;
+  onShare?: (id: string) => void;
 }
 
 function isOverdue(dueDate?: string): boolean {
@@ -162,6 +163,16 @@ export default function TodoItem({
                   🔄 {RECURRENCE_LABELS[todo.recurrencePattern]}
                 </span>
               )}
+              {todo.isSharedWithMe && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-900 dark:text-purple-300 dark:border-purple-700">
+                  Shared by {todo.sharedByEmail}
+                </span>
+              )}
+              {!todo.isSharedWithMe && todo.shares && todo.shares.length > 0 && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-700">
+                  Shared ({todo.shares.length})
+                </span>
+              )}
             </div>
             {todo.dueDate && (
               <span className={`text-xs ${
@@ -184,6 +195,11 @@ export default function TodoItem({
 
       {!editing && (
         <div className="flex-shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {!todo.isSharedWithMe && onShare && (
+            <button onClick={() => onShare(todo.id)} aria-label="Share todo" className="p-1.5 rounded-lg text-gray-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+            </button>
+          )}
           <button onClick={() => setEditing(true)} aria-label="Edit todo" className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-gray-700 transition-colors">
             <svg className="w-4 h-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l6.536-6.536a2 2 0 012.828 0l.172.172a2 2 0 010 2.828L12 14H9v-3z" />
