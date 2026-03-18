@@ -11,12 +11,18 @@ export async function PUT(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await params;
-  const { title, completed, priority, category, dueDate } = await request.json();
+  const { title, completed, priority, category, dueDate, archived } = await request.json();
+
+  const data: Record<string, unknown> = { title, completed, priority, category, dueDate };
+  if (typeof archived === "boolean") {
+    data.archived = archived;
+    data.archivedAt = archived ? new Date() : null;
+  }
 
   try {
     const todo = await prisma.todo.update({
       where: { id, userId: session.user.id },
-      data: { title, completed, priority, category, dueDate },
+      data,
     });
     return NextResponse.json(todo);
   } catch {

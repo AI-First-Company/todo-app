@@ -1,12 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useTodos } from "@/hooks/useTodos";
+import { useTemplates } from "@/hooks/useTemplates";
 import AddTodoForm from "./AddTodoForm";
 import TodoItem from "./TodoItem";
+import TemplateLibrary from "./TemplateLibrary";
 import ThemeToggle from "./ThemeToggle";
-import { Todo, Category } from "@/types/todo";
+import ExportModal from "./ExportModal";
+import { Todo, Template, Category } from "@/types/todo";
 
 type FilterType = "all" | "active" | "completed";
 
@@ -22,10 +25,34 @@ const CATEGORY_ICONS: Record<Category, string> = {
 
 export default function TodoApp() {
   const { data: session } = useSession();
-  const { todos, hydrated, addTodo, toggleTodo, deleteTodo, editTodo, clearCompleted } =
-    useTodos();
-  const [filter, setFilter] = useState<FilterType>("all");
+  const {
+    todos,
+    archivedTodos,
+    hydrated,
+    addTodo,
+    toggleTodo,
+    deleteTodo,
+    editTodo,
+    archiveTodo,
+    restoreTodo,
+    deleteArchivedTodo,
+    loadArchivedTodos,
+    clearCompleted,
+  } = useTodos();
+  const { templates, addTemplate, deleteTemplate } = useTemplates();
+
+  const handleUseTemplate = (template: Template) => {
+    addTodo(template.title, template.priority, template.category);
+  };  const [filter, setFilter] = useState<FilterType>("all");
   const [categoryFilter, setCategoryFilter] = useState<Category | "all">("all");
+  const [showExport, setShowExport] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
+
+  useEffect(() => {
+    if (showArchived) {
+      loadArchivedTodos();
+    }
+  }, [showArchived, loadArchivedTodos]);
 
   const filteredTodos = useMemo(() => {
     return todos
@@ -38,16 +65,13 @@ export default function TodoApp() {
         return statusMatch && categoryMatch;
       })
       .sort((a, b) => {
-        // Items with due dates come before items without
         if (a.dueDate && !b.dueDate) return -1;
         if (!a.dueDate && b.dueDate) return 1;
-        // Both have due dates: sort soonest first
         if (a.dueDate && b.dueDate) {
           const diff = a.dueDate.localeCompare(b.dueDate);
           if (diff !== 0) return diff;
         }
-        // Fall back to creation date (newest first)
-        return b.createdAt - a.createdAt;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
   }, [todos, filter, categoryFilter]);
 
@@ -70,7 +94,7 @@ export default function TodoApp() {
               ✅ Todo App
             </h1>
             <div className="flex items-center gap-3">
-              <ThemeToggle />
+              <button onClick={() => setShowExport(true)} className="px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">Export</button>              <ThemeToggle />
               {session?.user && (
                 <>
                   <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -91,16 +115,26 @@ export default function TodoApp() {
           </p>
         </div>
 
-        {/* Add Form */}
-        <div className="mb-6">
-          <AddTodoForm onAdd={addTodo} />
-        </div>
+        {/* Add Form - hidden in archive view */}
+        {!showArchived && (
+          <div className="mb-6">
+            <AddTodoForm onAdd={addTodo} />
+          <div className="mt-3">
+            <TemplateLibrary
+              templates={templates}
+              onUseTemplate={handleUseTemplate}
+              onAddTemplate={addTemplate}
+              onDeleteTemplate={deleteTemplate}
+            />
+          </div>
+          </div>
+        )}
 
         {/* Filter Tabs + Stats */}
         <div className="flex flex-col gap-2 mb-4">
           <div className="flex items-center justify-between">
             <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
-              {filters.map(({ label, value }) => (
+              {!showArchived && filters.map(({ label, value }) => (
                 <button
                   key={value}
                   onClick={() => setFilter(value)}
@@ -113,80 +147,122 @@ export default function TodoApp() {
                   {label}
                 </button>
               ))}
+              <button
+                onClick={() => setShowArchived(!showArchived)}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  showArchived
+                    ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                }`}
+              >
+                Archived{archivedTodos.length > 0 ? ` (${archivedTodos.length})` : ""}
+              </button>
             </div>
-            <span className="text-xs text-gray-400 dark:text-gray-500">
-              {activeCount} left
-            </span>
+            {!showArchived && (
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                {activeCount} left
+              </span>
+            )}
           </div>
 
-          {/* Category Filter */}
-          <div className="flex flex-wrap gap-1">
-            <button
-              onClick={() => setCategoryFilter("all")}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                categoryFilter === "all"
-                  ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300"
-                  : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
-              }`}
-            >
-              📂 All
-            </button>
-            {CATEGORIES.map((cat) => (
+          {/* Category Filter - hidden in archive view */}
+          {!showArchived && (
+            <div className="flex flex-wrap gap-1">
               <button
-                key={cat}
-                onClick={() => setCategoryFilter(cat)}
+                onClick={() => setCategoryFilter("all")}
                 className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                  categoryFilter === cat
+                  categoryFilter === "all"
                     ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300"
                     : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
                 }`}
               >
-                {CATEGORY_ICONS[cat]} {cat}
+                📂 All
               </button>
-            ))}
-          </div>
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setCategoryFilter(cat)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    categoryFilter === cat
+                      ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300"
+                      : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                  }`}
+                >
+                  {CATEGORY_ICONS[cat]} {cat}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Todo List */}
-        {!hydrated ? (
-          <div className="text-center py-16 text-gray-400">Loading…</div>
-        ) : filteredTodos.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-gray-400 text-sm">
-              {filter === "completed"
-                ? "No completed todos yet."
-                : filter === "active"
-                ? "Nothing left to do!"
-                : "Add your first todo above!"}
-            </p>
-          </div>
+        {/* Archived View */}
+        {showArchived ? (
+          archivedTodos.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-gray-400 text-sm">No archived todos.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {archivedTodos.map((todo: Todo) => (
+                <div key={todo.id} className="todo-item-enter">
+                  <TodoItem
+                    todo={todo}
+                    onToggle={toggleTodo}
+                    onDelete={deleteArchivedTodo}
+                    onEdit={editTodo}
+                    onRestore={restoreTodo}
+                    isArchived
+                  />
+                </div>
+              ))}
+            </div>
+          )
         ) : (
-          <div className="flex flex-col gap-2">
-            {filteredTodos.map((todo: Todo) => (
-              <div key={todo.id} className="todo-item-enter">
-                <TodoItem
-                  todo={todo}
-                  onToggle={toggleTodo}
-                  onDelete={deleteTodo}
-                  onEdit={editTodo}
-                />
+          <>
+            {/* Active Todo List */}
+            {!hydrated ? (
+              <div className="text-center py-16 text-gray-400">Loading…</div>
+            ) : filteredTodos.length === 0 ? (
+              <div className="text-center py-16">
+                <p className="text-gray-400 text-sm">
+                  {filter === "completed"
+                    ? "No completed todos yet."
+                    : filter === "active"
+                    ? "Nothing left to do!"
+                    : "Add your first todo above!"}
+                </p>
               </div>
-            ))}
-          </div>
-        )}
+            ) : (
+              <div className="flex flex-col gap-2">
+                {filteredTodos.map((todo: Todo) => (
+                  <div key={todo.id} className="todo-item-enter">
+                    <TodoItem
+                      todo={todo}
+                      onToggle={toggleTodo}
+                      onDelete={deleteTodo}
+                      onEdit={editTodo}
+                      onArchive={archiveTodo}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
 
-        {/* Footer actions */}
-        {completedCount > 0 && (
-          <div className="mt-4 flex justify-end">
-            <button
-              onClick={clearCompleted}
-              className="text-xs text-gray-400 hover:text-red-500 transition-colors"
-            >
-              Clear completed ({completedCount})
-            </button>
-          </div>
+            {/* Footer actions */}
+            {completedCount > 0 && (
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={clearCompleted}
+                  className="text-xs text-gray-400 hover:text-amber-600 transition-colors"
+                >
+                  Archive completed ({completedCount})
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
+      <ExportModal open={showExport} onClose={() => setShowExport(false)} />
     </div>
   );
 }

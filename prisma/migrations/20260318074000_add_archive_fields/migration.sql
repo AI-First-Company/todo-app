@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Todo" ADD COLUMN "archived" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Todo" ADD COLUMN "archivedAt" TIMESTAMP(3);
