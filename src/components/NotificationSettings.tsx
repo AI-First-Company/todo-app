@@ -107,7 +107,6 @@ export default function NotificationSettings() {
         </div>
 
         <div className="space-y-4">
-          {/* Enable toggle */}
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
@@ -122,7 +121,6 @@ export default function NotificationSettings() {
 
           {pref.enabled && (
             <>
-              {/* Email input */}
               <div>
                 <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
                   Email address
@@ -136,7 +134,6 @@ export default function NotificationSettings() {
                 />
               </div>
 
-              {/* Reminder timing */}
               <div>
                 <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                   Remind me
@@ -158,7 +155,6 @@ export default function NotificationSettings() {
             </>
           )}
 
-          {/* Save button */}
           <button
             onClick={handleSave}
             disabled={saving || (pref.enabled && pref.remindAt.length === 0)}
