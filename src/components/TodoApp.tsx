@@ -9,6 +9,7 @@ import TodoItem from "./TodoItem";
 import TemplateLibrary from "./TemplateLibrary";
 import ThemeToggle from "./ThemeToggle";
 import ExportModal from "./ExportModal";
+import NotificationSettings from "./NotificationSettings";
 import { Todo, Template, Category } from "@/types/todo";
 
 type FilterType = "all" | "active" | "completed";
