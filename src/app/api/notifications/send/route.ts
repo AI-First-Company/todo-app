@@ -50,12 +50,13 @@ export async function POST(request: NextRequest) {
 
   let sent = 0;
   const notificationsToCreate: { todoId: string; userId: string; timing: string }[] = [];
+  const usersNotified = new Set<string>();
 
   for (const pref of prefs) {
     const todos = todosByUser.get(pref.userId) ?? [];
     for (const todo of todos) {
       if (!todo.dueDate) continue;
-      const dueDate = new Date(todo.dueDate + "T00:00:00");
+      const dueDate = new Date(todo.dueDate + "T00:00:00Z");
       const diffHours = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
       for (const timing of pref.remindAt) {
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
           try {
             await sendReminderEmail({ to: pref.emailAddress, todoTitle: todo.title, dueDate: todo.dueDate, reminderType: timing });
             notificationsToCreate.push({ todoId: todo.id, userId: pref.userId, timing });
+            usersNotified.add(pref.id);
             sent++;
           } catch (err) {
             console.error("Failed to send reminder for todo " + todo.id + ":", err);
@@ -78,7 +80,9 @@ export async function POST(request: NextRequest) {
         }
       }
     }
-    await prisma.notificationPreference.update({ where: { id: pref.id }, data: { lastNotifiedAt: now } });
+    if (usersNotified.has(pref.id)) {
+      await prisma.notificationPreference.update({ where: { id: pref.id }, data: { lastNotifiedAt: now } });
+    }
   }
 
   if (notificationsToCreate.length > 0) {
