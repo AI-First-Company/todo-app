@@ -10,68 +10,21 @@ datasource db {
 }
 
 model User {
-  id           String      @id @default(uuid())
-  email        String      @unique
+  id           String   @id @default(uuid())
+  email        String   @unique
   passwordHash String
   name         String?
-  createdAt    DateTime    @default(now())
-  todos        Todo[]
-  sharedByMe   TodoShare[] @relation("SharedBy")
-  sharedWithMe TodoShare[] @relation("SharedWith")
+  createdAt    DateTime @default(now())
 }
 
 model Todo {
-  id                String      @id @default(uuid())
-  title             String
-  completed         Boolean     @default(false)
-  priority          String      @default("medium")
-  category          String?
-  dueDate           String?
-  sortOrder         Int         @default(0)
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-  userId            String?
-  user              User?       @relation(fields: [userId], references: [id])
-  archived          Boolean     @default(false)
-  archivedAt        DateTime?
-  isRecurring       Boolean     @default(false)
-  recurrencePattern String?
-  recurrenceEndDate String?
-  parentTodoId      String?
-  shares            TodoShare[]
-}
-
-model Template {
   id        String   @id @default(uuid())
-  name      String
   title     String
+  completed Boolean  @default(false)
   priority  String   @default("medium")
   category  String?
+  dueDate   String?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   userId    String?
-}
-
-model NotificationPreference {
-  id              String   @id @default(uuid())
-  userId          String   @unique
-  enabled         Boolean  @default(true)
-  emailAddress    String
-  remindAt        String[] @default(["1_day_before"])
-  lastNotifiedAt  DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
-model TodoShare {
-  id               String   @id @default(uuid())
-  todoId           String
-  todo             Todo     @relation(fields: [todoId], references: [id], onDelete: Cascade)
-  sharedByUserId   String
-  sharedBy         User     @relation("SharedBy", fields: [sharedByUserId], references: [id])
-  sharedWithUserId String
-  sharedWith       User     @relation("SharedWith", fields: [sharedWithUserId], references: [id])
-  permission       String   @default("view")
-  createdAt        DateTime @default(now())
-
-  @@unique([todoId, sharedWithUserId])
 }

@@ -21,14 +21,10 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { title, priority, category, dueDate, isRecurring, recurrencePattern, recurrenceEndDate } = body;
+  const { title, priority, category, dueDate } = body;
 
   if (!title || typeof title !== "string" || !title.trim()) {
     return NextResponse.json({ error: "title is required" }, { status: 400 });
-  }
-
-  if (isRecurring && !recurrencePattern) {
-    return NextResponse.json({ error: "recurrencePattern is required for recurring todos" }, { status: 400 });
   }
 
   const todo = await prisma.todo.create({
@@ -39,9 +35,6 @@ export async function POST(request: NextRequest) {
       category: category ?? null,
       dueDate: dueDate ?? null,
       userId: session.user.id,
-      isRecurring: isRecurring ?? false,
-      recurrencePattern: isRecurring ? recurrencePattern : null,
-      recurrenceEndDate: isRecurring ? (recurrenceEndDate ?? null) : null,
     },
   });
 

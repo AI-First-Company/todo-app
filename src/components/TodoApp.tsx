@@ -6,7 +6,6 @@ import { useTodos } from "@/hooks/useTodos";
 import AddTodoForm from "./AddTodoForm";
 import TodoItem from "./TodoItem";
 import ThemeToggle from "./ThemeToggle";
-import NotificationSettings from "./NotificationSettings";
 import { Todo, Category } from "@/types/todo";
 
 type FilterType = "all" | "active" | "completed";
@@ -39,13 +38,16 @@ export default function TodoApp() {
         return statusMatch && categoryMatch;
       })
       .sort((a, b) => {
+        // Items with due dates come before items without
         if (a.dueDate && !b.dueDate) return -1;
         if (!a.dueDate && b.dueDate) return 1;
+        // Both have due dates: sort soonest first
         if (a.dueDate && b.dueDate) {
           const diff = a.dueDate.localeCompare(b.dueDate);
           if (diff !== 0) return diff;
         }
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        // Fall back to creation date (newest first)
+        return b.createdAt - a.createdAt;
       });
   }, [todos, filter, categoryFilter]);
 
@@ -65,11 +67,10 @@ export default function TodoApp() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-1">
             <h1 className="text-4xl font-extrabold text-indigo-600 dark:text-indigo-400 tracking-tight">
-              Todo App
+              ✅ Todo App
             </h1>
             <div className="flex items-center gap-3">
               <ThemeToggle />
-              <NotificationSettings />
               {session?.user && (
                 <>
                   <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -128,7 +129,7 @@ export default function TodoApp() {
                   : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
               }`}
             >
-              All
+              📂 All
             </button>
             {CATEGORIES.map((cat) => (
               <button
@@ -148,7 +149,7 @@ export default function TodoApp() {
 
         {/* Todo List */}
         {!hydrated ? (
-          <div className="text-center py-16 text-gray-400">Loading...</div>
+          <div className="text-center py-16 text-gray-400">Loading…</div>
         ) : filteredTodos.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-gray-400 text-sm">
@@ -168,7 +169,6 @@ export default function TodoApp() {
                   onToggle={toggleTodo}
                   onDelete={deleteTodo}
                   onEdit={editTodo}
-                      onUpdateNotes={updateNotes}
                 />
               </div>
             ))}
