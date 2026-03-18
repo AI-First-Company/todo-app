@@ -18,13 +18,17 @@ model User {
 }
 
 model Todo {
-  id        String   @id @default(uuid())
-  title     String
-  completed Boolean  @default(false)
-  priority  String   @default("medium")
-  category  String?
-  dueDate   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userId    String?
+  id                String   @id @default(uuid())
+  title             String
+  completed         Boolean  @default(false)
+  priority          String   @default("medium")
+  category          String?
+  dueDate           String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  userId            String?
+  isRecurring       Boolean  @default(false)
+  recurrencePattern String?
+  recurrenceEndDate String?
+  parentTodoId      String?
 }

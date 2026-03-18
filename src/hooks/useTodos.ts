@@ -1,20 +1,18 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Todo } from "@/types/todo";
+import { Todo, RecurrencePattern } from "@/types/todo";
 
 export function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
-  // Load todos from API on mount; fall back to localStorage if API is unavailable
   useEffect(() => {
     async function load() {
       try {
         const res = await fetch("/api/todos");
         if (res.ok) {
           const data: Todo[] = await res.json();
-          // If API store is empty, seed from localStorage
           if (data.length === 0 && typeof window !== "undefined") {
             const stored = localStorage.getItem("todos");
             if (stored) {
@@ -34,7 +32,6 @@ export function useTodos() {
           setTodos(data);
         }
       } catch {
-        // fallback to localStorage
         if (typeof window !== "undefined") {
           const stored = localStorage.getItem("todos");
           if (stored) setTodos(JSON.parse(stored));
@@ -46,7 +43,6 @@ export function useTodos() {
     load();
   }, []);
 
-  // Mirror to localStorage for offline resilience
   useEffect(() => {
     if (hydrated && typeof window !== "undefined") {
       localStorage.setItem("todos", JSON.stringify(todos));
@@ -58,22 +54,23 @@ export function useTodos() {
       title: string,
       priority: Todo["priority"],
       category?: Todo["category"],
-      dueDate?: string
+      dueDate?: string,
+      isRecurring?: boolean,
+      recurrencePattern?: RecurrencePattern,
+      recurrenceEndDate?: string
     ) => {
       try {
         const res = await fetch("/api/todos", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, priority, category, dueDate }),
+          body: JSON.stringify({ title, priority, category, dueDate, isRecurring, recurrencePattern, recurrenceEndDate }),
         });
         if (res.ok) {
           const todo: Todo = await res.json();
           setTodos((prev) => [todo, ...prev]);
           return;
         }
-      } catch {
-        // fallback: optimistic local add
-      }
+      } catch { /* fallback */ }
       const todo: Todo = {
         id: crypto.randomUUID(),
         title: title.trim(),
@@ -82,6 +79,9 @@ export function useTodos() {
         category,
         dueDate,
         createdAt: new Date().toISOString(),
+        isRecurring,
+        recurrencePattern,
+        recurrenceEndDate,
       };
       setTodos((prev) => [todo, ...prev]);
     },
@@ -90,16 +90,21 @@ export function useTodos() {
 
   const toggleTodo = useCallback(async (id: string) => {
     setTodos((prev) => {
-      const updated = prev.map((t) =>
-        t.id === id ? { ...t, completed: !t.completed } : t
-      );
+      const updated = prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t));
       const todo = updated.find((t) => t.id === id);
       if (todo) {
         fetch(`/api/todos/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ completed: todo.completed }),
-        }).catch(() => {});
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.nextTodo) {
+              setTodos((prev) => [data.nextTodo, ...prev]);
+            }
+          })
+          .catch(() => {});
       }
       return updated;
     });
@@ -111,17 +116,9 @@ export function useTodos() {
   }, []);
 
   const editTodo = useCallback(
-    async (
-      id: string,
-      title: string,
-      priority: Todo["priority"],
-      category?: Todo["category"],
-      dueDate?: string
-    ) => {
+    async (id: string, title: string, priority: Todo["priority"], category?: Todo["category"], dueDate?: string) => {
       setTodos((prev) =>
-        prev.map((t) =>
-          t.id === id ? { ...t, title: title.trim(), priority, category, dueDate } : t
-        )
+        prev.map((t) => (t.id === id ? { ...t, title: title.trim(), priority, category, dueDate } : t))
       );
       fetch(`/api/todos/${id}`, {
         method: "PUT",
