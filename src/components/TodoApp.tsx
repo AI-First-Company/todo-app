@@ -6,6 +6,7 @@ import { useTodos } from "@/hooks/useTodos";
 import AddTodoForm from "./AddTodoForm";
 import TodoItem from "./TodoItem";
 import ThemeToggle from "./ThemeToggle";
+import ExportModal from "./ExportModal";
 import { Todo, Category } from "@/types/todo";
 
 type FilterType = "all" | "active" | "completed";
@@ -26,6 +27,7 @@ export default function TodoApp() {
     useTodos();
   const [filter, setFilter] = useState<FilterType>("all");
   const [categoryFilter, setCategoryFilter] = useState<Category | "all">("all");
+  const [showExport, setShowExport] = useState(false);
 
   const filteredTodos = useMemo(() => {
     return todos
@@ -38,16 +40,13 @@ export default function TodoApp() {
         return statusMatch && categoryMatch;
       })
       .sort((a, b) => {
-        // Items with due dates come before items without
         if (a.dueDate && !b.dueDate) return -1;
         if (!a.dueDate && b.dueDate) return 1;
-        // Both have due dates: sort soonest first
         if (a.dueDate && b.dueDate) {
           const diff = a.dueDate.localeCompare(b.dueDate);
           if (diff !== 0) return diff;
         }
-        // Fall back to creation date (newest first)
-        return b.createdAt - a.createdAt;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
   }, [todos, filter, categoryFilter]);
 
@@ -70,6 +69,12 @@ export default function TodoApp() {
               ✅ Todo App
             </h1>
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowExport(true)}
+                className="px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Export
+              </button>
               <ThemeToggle />
               {session?.user && (
                 <>
@@ -187,6 +192,8 @@ export default function TodoApp() {
           </div>
         )}
       </div>
+
+      <ExportModal open={showExport} onClose={() => setShowExport(false)} />
     </div>
   );
 }
