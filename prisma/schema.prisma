@@ -24,7 +24,31 @@ model Todo {
   priority  String   @default("medium")
   category  String?
   dueDate   String?
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   userId    String?
+  archived          Boolean   @default(false)
+  archivedAt        DateTime?
+}
+
+model Template {
+  id        String   @id @default(uuid())
+  name      String
+  title     String
+  priority  String   @default("medium")
+  category  String?
+  createdAt DateTime @default(now())
+  userId    String?
+}
+
+model NotificationPreference {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  enabled         Boolean  @default(true)
+  emailAddress    String
+  remindAt        String[] @default(["1_day_before"])
+  lastNotifiedAt  DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
