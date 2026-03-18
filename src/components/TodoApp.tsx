@@ -6,6 +6,7 @@ import { useTodos } from "@/hooks/useTodos";
 import AddTodoForm from "./AddTodoForm";
 import TodoItem from "./TodoItem";
 import ThemeToggle from "./ThemeToggle";
+import NotificationSettings from "./NotificationSettings";
 import { Todo, Category } from "@/types/todo";
 
 type FilterType = "all" | "active" | "completed";
@@ -47,7 +48,7 @@ export default function TodoApp() {
           if (diff !== 0) return diff;
         }
         // Fall back to creation date (newest first)
-        return b.createdAt - a.createdAt;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
   }, [todos, filter, categoryFilter]);
 
@@ -71,6 +72,7 @@ export default function TodoApp() {
             </h1>
             <div className="flex items-center gap-3">
               <ThemeToggle />
+              <NotificationSettings />
               {session?.user && (
                 <>
                   <span className="text-sm text-gray-600 dark:text-gray-400">

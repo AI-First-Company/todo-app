@@ -28,3 +28,24 @@ model Todo {
   updatedAt DateTime @updatedAt
   userId    String?
 }
+
+model NotificationPreference {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  enabled         Boolean  @default(true)
+  emailAddress    String
+  remindAt        String[] @default(["1_day_before"])
+  lastNotifiedAt  DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model SentNotification {
+  id        String   @id @default(uuid())
+  todoId    String
+  userId    String
+  timing    String
+  createdAt DateTime @default(now())
+
+  @@unique([todoId, timing])
+}
