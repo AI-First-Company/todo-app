@@ -28,3 +28,15 @@ model Todo {
   updatedAt DateTime @updatedAt
   userId    String?
 }
+
+model Template {
+  id        String   @id @default(uuid())
+  name      String
+  title     String
+  priority  String   @default("medium")
+  category  String?
+  createdAt DateTime @default(now())
+  userId    String?
+
+  @@index([userId])
+}

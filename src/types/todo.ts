@@ -11,3 +11,12 @@ export interface Todo {
   dueDate?: string; // ISO date string YYYY-MM-DD
   createdAt: string;
 }
+
+export interface Template {
+  id: string;
+  name: string;
+  title: string;
+  priority: Priority;
+  category: Category | null;
+  createdAt: string;
+}
