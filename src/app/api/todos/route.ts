@@ -10,6 +10,7 @@ export async function GET() {
   const todos = await prisma.todo.findMany({
     where: { userId: session.user.id },
     orderBy: { createdAt: "desc" },
+    include: { subtasks: { orderBy: { createdAt: "asc" } } },
   });
   return NextResponse.json(todos);
 }
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest) {
       dueDate: dueDate ?? null,
       userId: session.user.id,
     },
+    include: { subtasks: true },
   });
 
   return NextResponse.json(todo, { status: 201 });

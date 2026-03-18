@@ -22,7 +22,7 @@ const CATEGORY_ICONS: Record<Category, string> = {
 
 export default function TodoApp() {
   const { data: session } = useSession();
-  const { todos, hydrated, addTodo, toggleTodo, deleteTodo, editTodo, clearCompleted } =
+  const { todos, hydrated, addTodo, toggleTodo, deleteTodo, editTodo, addSubtask, toggleSubtask, deleteSubtask, clearCompleted } =
     useTodos();
   const [filter, setFilter] = useState<FilterType>("all");
   const [categoryFilter, setCategoryFilter] = useState<Category | "all">("all");
@@ -38,16 +38,13 @@ export default function TodoApp() {
         return statusMatch && categoryMatch;
       })
       .sort((a, b) => {
-        // Items with due dates come before items without
         if (a.dueDate && !b.dueDate) return -1;
         if (!a.dueDate && b.dueDate) return 1;
-        // Both have due dates: sort soonest first
         if (a.dueDate && b.dueDate) {
           const diff = a.dueDate.localeCompare(b.dueDate);
           if (diff !== 0) return diff;
         }
-        // Fall back to creation date (newest first)
-        return b.createdAt - a.createdAt;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
   }, [todos, filter, categoryFilter]);
 
@@ -61,9 +58,8 @@ export default function TodoApp() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12 px-4 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       <div className="max-w-xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-1">
             <h1 className="text-4xl font-extrabold text-indigo-600 dark:text-indigo-400 tracking-tight">
@@ -86,17 +82,13 @@ export default function TodoApp() {
               )}
             </div>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Your tasks, saved to your account
-          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Your tasks, saved to your account</p>
         </div>
 
-        {/* Add Form */}
         <div className="mb-6">
           <AddTodoForm onAdd={addTodo} />
         </div>
 
-        {/* Filter Tabs + Stats */}
         <div className="flex flex-col gap-2 mb-4">
           <div className="flex items-center justify-between">
             <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
@@ -109,17 +101,12 @@ export default function TodoApp() {
                       ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm"
                       : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                   }`}
-                >
-                  {label}
-                </button>
+                >{label}</button>
               ))}
             </div>
-            <span className="text-xs text-gray-400 dark:text-gray-500">
-              {activeCount} left
-            </span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{activeCount} left</span>
           </div>
 
-          {/* Category Filter */}
           <div className="flex flex-wrap gap-1">
             <button
               onClick={() => setCategoryFilter("all")}
@@ -128,9 +115,7 @@ export default function TodoApp() {
                   ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300"
                   : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
               }`}
-            >
-              📂 All
-            </button>
+            >📂 All</button>
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
@@ -140,23 +125,18 @@ export default function TodoApp() {
                     ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300"
                     : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
                 }`}
-              >
-                {CATEGORY_ICONS[cat]} {cat}
-              </button>
+              >{CATEGORY_ICONS[cat]} {cat}</button>
             ))}
           </div>
         </div>
 
-        {/* Todo List */}
         {!hydrated ? (
           <div className="text-center py-16 text-gray-400">Loading…</div>
         ) : filteredTodos.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-gray-400 text-sm">
-              {filter === "completed"
-                ? "No completed todos yet."
-                : filter === "active"
-                ? "Nothing left to do!"
+              {filter === "completed" ? "No completed todos yet."
+                : filter === "active" ? "Nothing left to do!"
                 : "Add your first todo above!"}
             </p>
           </div>
@@ -169,19 +149,18 @@ export default function TodoApp() {
                   onToggle={toggleTodo}
                   onDelete={deleteTodo}
                   onEdit={editTodo}
+                  onAddSubtask={addSubtask}
+                  onToggleSubtask={toggleSubtask}
+                  onDeleteSubtask={deleteSubtask}
                 />
               </div>
             ))}
           </div>
         )}
 
-        {/* Footer actions */}
         {completedCount > 0 && (
           <div className="mt-4 flex justify-end">
-            <button
-              onClick={clearCompleted}
-              className="text-xs text-gray-400 hover:text-red-500 transition-colors"
-            >
+            <button onClick={clearCompleted} className="text-xs text-gray-400 hover:text-red-500 transition-colors">
               Clear completed ({completedCount})
             </button>
           </div>
