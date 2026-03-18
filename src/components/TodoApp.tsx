@@ -51,7 +51,7 @@ export default function TodoApp() {
           if (diff !== 0) return diff;
         }
         // Fall back to creation date (newest first)
-        return b.createdAt - a.createdAt;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
   }, [todos, filter, categoryFilter]);
 
