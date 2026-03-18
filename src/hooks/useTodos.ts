@@ -129,6 +129,24 @@ export function useTodos() {
     []
   );
 
+  
+  const updateNotes = useCallback(
+    async (id: string, notes: string) => {
+      const trimmedNotes = notes.trim() || undefined;
+      setTodos((prev) =>
+        prev.map((t) =>
+          t.id === id ? { ...t, notes: trimmedNotes } : t
+        )
+      );
+      fetch(`/api/todos/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: trimmedNotes ?? null }),
+      }).catch(() => {});
+    },
+    []
+  );
+
   const clearCompleted = useCallback(async () => {
     setTodos((prev) => {
       const toDelete = prev.filter((t) => t.completed);
@@ -146,6 +164,7 @@ export function useTodos() {
     toggleTodo,
     deleteTodo,
     editTodo,
+    updateNotes,
     clearCompleted,
   };
 }
