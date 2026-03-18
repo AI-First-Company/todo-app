@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
+import Link from "next/link";
 import { useTodos } from "@/hooks/useTodos";
 import AddTodoForm from "./AddTodoForm";
 import TodoItem from "./TodoItem";
@@ -66,6 +67,7 @@ export default function TodoApp() {
               ✅ Todo App
             </h1>
             <div className="flex items-center gap-3">
+              <Link href="/dashboard" className="text-xs text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors">📊 Stats</Link>
               <ThemeToggle />
               {session?.user && (
                 <>
