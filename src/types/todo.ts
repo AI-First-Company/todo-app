@@ -9,5 +9,6 @@ export interface Todo {
   priority: Priority;
   category?: Category;
   dueDate?: string; // ISO date string YYYY-MM-DD
+  sortOrder: number;
   createdAt: string;
 }

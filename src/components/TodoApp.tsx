@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useTodos } from "@/hooks/useTodos";
 import AddTodoForm from "./AddTodoForm";
@@ -22,12 +22,17 @@ const CATEGORY_ICONS: Record<Category, string> = {
 
 export default function TodoApp() {
   const { data: session } = useSession();
-  const { todos, hydrated, addTodo, toggleTodo, deleteTodo, editTodo, clearCompleted } =
+  const { todos, hydrated, addTodo, toggleTodo, deleteTodo, editTodo, reorderTodos, clearCompleted } =
     useTodos();
   const [filter, setFilter] = useState<FilterType>("all");
   const [categoryFilter, setCategoryFilter] = useState<Category | "all">("all");
 
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const isDefaultView = filter === "all" && categoryFilter === "all";
+
   const filteredTodos = useMemo(() => {
+    if (isDefaultView) return todos;
     return todos
       .filter((t) => {
         const statusMatch =
@@ -47,12 +52,21 @@ export default function TodoApp() {
           if (diff !== 0) return diff;
         }
         // Fall back to creation date (newest first)
-        return b.createdAt - a.createdAt;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
-  }, [todos, filter, categoryFilter]);
+  }, [todos, filter, categoryFilter, isDefaultView]);
 
   const activeCount = todos.filter((t) => !t.completed).length;
   const completedCount = todos.filter((t) => t.completed).length;
+
+
+  const handleDragStart = useCallback((index: number) => { setDragIndex(index); }, []);
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => { e.preventDefault(); setDragOverIndex(index); }, []);
+  const handleDrop = useCallback((dropIndex: number) => {
+    if (dragIndex !== null && dragIndex !== dropIndex && isDefaultView) reorderTodos(dragIndex, dropIndex);
+    setDragIndex(null); setDragOverIndex(null);
+  }, [dragIndex, isDefaultView, reorderTodos]);
+  const handleDragEnd = useCallback(() => { setDragIndex(null); setDragOverIndex(null); }, []);
 
   const filters: { label: string; value: FilterType }[] = [
     { label: "All", value: "all" },
@@ -162,13 +176,17 @@ export default function TodoApp() {
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {filteredTodos.map((todo: Todo) => (
-              <div key={todo.id} className="todo-item-enter">
+            {isDefaultView && filteredTodos.length > 1 && (
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Drag to reorder your todos</p>
+            )}
+            {filteredTodos.map((todo: Todo, index: number) => (
+              <div key={todo.id} className={`todo-item-enter transition-all ${dragIndex === index ? "opacity-50 scale-95" : ""} ${dragOverIndex === index && dragIndex !== index ? "border-t-2 border-indigo-400 pt-1" : ""}`} draggable={isDefaultView} onDragStart={() => handleDragStart(index)} onDragOver={(e) => handleDragOver(e, index)} onDrop={() => handleDrop(index)} onDragEnd={handleDragEnd}>
                 <TodoItem
                   todo={todo}
                   onToggle={toggleTodo}
                   onDelete={deleteTodo}
                   onEdit={editTodo}
+                  isDraggable={isDefaultView}
                 />
               </div>
             ))}

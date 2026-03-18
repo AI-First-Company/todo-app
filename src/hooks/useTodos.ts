@@ -81,6 +81,7 @@ export function useTodos() {
         priority,
         category,
         dueDate,
+        sortOrder: 0,
         createdAt: new Date().toISOString(),
       };
       setTodos((prev) => [todo, ...prev]);
@@ -132,6 +133,23 @@ export function useTodos() {
     []
   );
 
+
+  const reorderTodos = useCallback(async (fromIndex: number, toIndex: number) => {
+    setTodos((prev) => {
+      const updated = [...prev];
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      const reordered = updated.map((t, i) => ({ ...t, sortOrder: i }));
+      const orderedIds = reordered.map((t) => t.id);
+      fetch("/api/todos/reorder", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderedIds }),
+      }).catch(() => {});
+      return reordered;
+    });
+  }, []);
+
   const clearCompleted = useCallback(async () => {
     setTodos((prev) => {
       const toDelete = prev.filter((t) => t.completed);
@@ -149,6 +167,7 @@ export function useTodos() {
     toggleTodo,
     deleteTodo,
     editTodo,
+    reorderTodos,
     clearCompleted,
   };
 }
