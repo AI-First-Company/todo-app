@@ -24,7 +24,7 @@ const CATEGORY_ICONS: Record<Category, string> = {
 
 export default function TodoApp() {
   const { data: session } = useSession();
-  const { todos, hydrated, addTodo, toggleTodo, deleteTodo, editTodo, clearCompleted } =
+  const { todos, hydrated, addTodo, toggleTodo, deleteTodo, editTodo, updateNotes, clearCompleted } =
     useTodos();
   const [filter, setFilter] = useState<FilterType>("all");
   const [categoryFilter, setCategoryFilter] = useState<Category | "all">("all");
@@ -174,6 +174,7 @@ export default function TodoApp() {
                   onToggle={toggleTodo}
                   onDelete={deleteTodo}
                   onEdit={editTodo}
+                      onUpdateNotes={updateNotes}
                   onShare={(id) => setSharingTodoId(id)}
                 />
               </div>
