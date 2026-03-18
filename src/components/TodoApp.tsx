@@ -3,10 +3,12 @@
 import { useMemo, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useTodos } from "@/hooks/useTodos";
+import { useTemplates } from "@/hooks/useTemplates";
 import AddTodoForm from "./AddTodoForm";
 import TodoItem from "./TodoItem";
+import TemplateLibrary from "./TemplateLibrary";
 import ThemeToggle from "./ThemeToggle";
-import { Todo, Category } from "@/types/todo";
+import { Todo, Template, Category } from "@/types/todo";
 
 type FilterType = "all" | "active" | "completed";
 
@@ -22,8 +24,10 @@ const CATEGORY_ICONS: Record<Category, string> = {
 
 export default function TodoApp() {
   const { data: session } = useSession();
-  const { todos, hydrated, addTodo, toggleTodo, deleteTodo, editTodo, clearCompleted } =
+  const { todos, hydrated, addTodo, toggleTodo, deleteTodo, editTodo, updateNotes, clearCompleted } =
     useTodos();
+  const { templates, addTemplate, deleteTemplate } = useTemplates();
+  const handleUseTemplate = (template: Template) => { addTodo(template.title, template.priority, template.category); };
   const [filter, setFilter] = useState<FilterType>("all");
   const [categoryFilter, setCategoryFilter] = useState<Category | "all">("all");
 
@@ -47,7 +51,7 @@ export default function TodoApp() {
           if (diff !== 0) return diff;
         }
         // Fall back to creation date (newest first)
-        return b.createdAt - a.createdAt;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
   }, [todos, filter, categoryFilter]);
 
@@ -94,6 +98,7 @@ export default function TodoApp() {
         {/* Add Form */}
         <div className="mb-6">
           <AddTodoForm onAdd={addTodo} />
+          <div className="mt-3"><TemplateLibrary templates={templates} onUseTemplate={handleUseTemplate} onAddTemplate={addTemplate} onDeleteTemplate={deleteTemplate} /></div>
         </div>
 
         {/* Filter Tabs + Stats */}
@@ -169,6 +174,7 @@ export default function TodoApp() {
                   onToggle={toggleTodo}
                   onDelete={deleteTodo}
                   onEdit={editTodo}
+                      onUpdateNotes={updateNotes}
                 />
               </div>
             ))}

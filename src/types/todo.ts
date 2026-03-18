@@ -8,6 +8,16 @@ export interface Todo {
   completed: boolean;
   priority: Priority;
   category?: Category;
-  dueDate?: string; // ISO date string YYYY-MM-DD
+  dueDate?: string;
+  notes?: string; // ISO date string YYYY-MM-DD
+  createdAt: string;
+}
+
+export interface Template {
+  id: string;
+  name: string;
+  title: string;
+  priority: Priority;
+  category?: Category;
   createdAt: string;
 }
