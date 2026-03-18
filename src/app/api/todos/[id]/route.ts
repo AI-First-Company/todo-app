@@ -17,6 +17,7 @@ export async function PUT(
     const todo = await prisma.todo.update({
       where: { id, userId: session.user.id },
       data: { title, completed, priority, category, dueDate },
+      include: { subtasks: { orderBy: { createdAt: "asc" } } },
     });
     return NextResponse.json(todo);
   } catch {

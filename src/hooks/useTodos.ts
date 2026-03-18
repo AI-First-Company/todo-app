@@ -1,20 +1,18 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Todo } from "@/types/todo";
+import { Todo, Subtask } from "@/types/todo";
 
 export function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
-  // Load todos from API on mount; fall back to localStorage if API is unavailable
   useEffect(() => {
     async function load() {
       try {
         const res = await fetch("/api/todos");
         if (res.ok) {
           const data: Todo[] = await res.json();
-          // If API store is empty, seed from localStorage
           if (data.length === 0 && typeof window !== "undefined") {
             const stored = localStorage.getItem("todos");
             if (stored) {
@@ -34,7 +32,6 @@ export function useTodos() {
           setTodos(data);
         }
       } catch {
-        // fallback to localStorage
         if (typeof window !== "undefined") {
           const stored = localStorage.getItem("todos");
           if (stored) setTodos(JSON.parse(stored));
@@ -46,7 +43,6 @@ export function useTodos() {
     load();
   }, []);
 
-  // Mirror to localStorage for offline resilience
   useEffect(() => {
     if (hydrated && typeof window !== "undefined") {
       localStorage.setItem("todos", JSON.stringify(todos));
@@ -72,7 +68,7 @@ export function useTodos() {
           return;
         }
       } catch {
-        // fallback: optimistic local add
+        // fallback
       }
       const todo: Todo = {
         id: crypto.randomUUID(),
@@ -132,6 +128,92 @@ export function useTodos() {
     []
   );
 
+  const addSubtask = useCallback(
+    async (todoId: string, title: string) => {
+      const optimistic: Subtask = {
+        id: crypto.randomUUID(),
+        title: title.trim(),
+        completed: false,
+        createdAt: new Date().toISOString(),
+      };
+      setTodos((prev) =>
+        prev.map((t) =>
+          t.id === todoId
+            ? { ...t, subtasks: [...(t.subtasks ?? []), optimistic] }
+            : t
+        )
+      );
+      try {
+        const res = await fetch(`/api/todos/${todoId}/subtasks`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: title.trim() }),
+        });
+        if (res.ok) {
+          const created: Subtask = await res.json();
+          setTodos((prev) =>
+            prev.map((t) =>
+              t.id === todoId
+                ? {
+                    ...t,
+                    subtasks: (t.subtasks ?? []).map((s) =>
+                      s.id === optimistic.id ? created : s
+                    ),
+                  }
+                : t
+            )
+          );
+        }
+      } catch {
+        // keep optimistic
+      }
+    },
+    []
+  );
+
+  const toggleSubtask = useCallback(
+    async (todoId: string, subtaskId: string) => {
+      let newCompleted = false;
+      setTodos((prev) =>
+        prev.map((t) => {
+          if (t.id !== todoId) return t;
+          const subtasks = (t.subtasks ?? []).map((s) => {
+            if (s.id === subtaskId) {
+              newCompleted = !s.completed;
+              return { ...s, completed: newCompleted };
+            }
+            return s;
+          });
+          return { ...t, subtasks };
+        })
+      );
+      fetch(`/api/todos/${todoId}/subtasks/${subtaskId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: newCompleted }),
+      }).catch(() => {});
+    },
+    []
+  );
+
+  const deleteSubtask = useCallback(
+    async (todoId: string, subtaskId: string) => {
+      setTodos((prev) =>
+        prev.map((t) => {
+          if (t.id !== todoId) return t;
+          return {
+            ...t,
+            subtasks: (t.subtasks ?? []).filter((s) => s.id !== subtaskId),
+          };
+        })
+      );
+      fetch(`/api/todos/${todoId}/subtasks/${subtaskId}`, {
+        method: "DELETE",
+      }).catch(() => {});
+    },
+    []
+  );
+
   const clearCompleted = useCallback(async () => {
     setTodos((prev) => {
       const toDelete = prev.filter((t) => t.completed);
@@ -149,6 +231,9 @@ export function useTodos() {
     toggleTodo,
     deleteTodo,
     editTodo,
+    addSubtask,
+    toggleSubtask,
+    deleteSubtask,
     clearCompleted,
   };
 }

@@ -18,13 +18,23 @@ model User {
 }
 
 model Todo {
+  id        String    @id @default(uuid())
+  title     String
+  completed Boolean   @default(false)
+  priority  String    @default("medium")
+  category  String?
+  dueDate   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  userId    String?
+  subtasks  Subtask[]
+}
+
+model Subtask {
   id        String   @id @default(uuid())
   title     String
   completed Boolean  @default(false)
-  priority  String   @default("medium")
-  category  String?
-  dueDate   String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userId    String?
+  todoId    String
+  todo      Todo     @relation(fields: [todoId], references: [id], onDelete: Cascade)
 }
