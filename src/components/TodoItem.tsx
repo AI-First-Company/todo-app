@@ -57,6 +57,7 @@ export default function TodoItem({
   onToggle,
   onDelete,
   onEdit,
+  onShare,
 }: TodoItemProps) {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(todo.title);

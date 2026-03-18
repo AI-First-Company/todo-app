@@ -6,6 +6,8 @@ import { useTodos } from "@/hooks/useTodos";
 import AddTodoForm from "./AddTodoForm";
 import TodoItem from "./TodoItem";
 import ThemeToggle from "./ThemeToggle";
+import ShareModal from "./ShareModal";
+import NotificationSettings from "./NotificationSettings";
 import { Todo, Category } from "@/types/todo";
 
 type FilterType = "all" | "active" | "completed";
@@ -26,6 +28,8 @@ export default function TodoApp() {
     useTodos();
   const [filter, setFilter] = useState<FilterType>("all");
   const [categoryFilter, setCategoryFilter] = useState<Category | "all">("all");
+  const [sharingTodoId, setSharingTodoId] = useState<string | null>(null);
+  const sharingTodo = sharingTodoId ? todos.find((t) => t.id === sharingTodoId) : null;
 
   const filteredTodos = useMemo(() => {
     return todos
@@ -71,6 +75,7 @@ export default function TodoApp() {
             </h1>
             <div className="flex items-center gap-3">
               <ThemeToggle />
+              <NotificationSettings />
               {session?.user && (
                 <>
                   <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -169,6 +174,7 @@ export default function TodoApp() {
                   onToggle={toggleTodo}
                   onDelete={deleteTodo}
                   onEdit={editTodo}
+                  onShare={(id) => setSharingTodoId(id)}
                 />
               </div>
             ))}
@@ -187,6 +193,9 @@ export default function TodoApp() {
           </div>
         )}
       </div>
+      {sharingTodo && (
+        <ShareModal todoId={sharingTodo.id} todoTitle={sharingTodo.title} onClose={() => setSharingTodoId(null)} />
+      )}
     </div>
   );
 }
