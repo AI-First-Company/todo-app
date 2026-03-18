@@ -38,10 +38,13 @@ export default function TodoApp() {
         return statusMatch && categoryMatch;
       })
       .sort((a, b) => {
-        // Items with due dates come before items without
+        // Sort by priority first (high > medium > low)
+        const priorityRank: Record<string, number> = { high: 0, medium: 1, low: 2 };
+        const pDiff = priorityRank[a.priority] - priorityRank[b.priority];
+        if (pDiff !== 0) return pDiff;
+        // Then by due date
         if (a.dueDate && !b.dueDate) return -1;
         if (!a.dueDate && b.dueDate) return 1;
-        // Both have due dates: sort soonest first
         if (a.dueDate && b.dueDate) {
           const diff = a.dueDate.localeCompare(b.dueDate);
           if (diff !== 0) return diff;
@@ -61,19 +64,19 @@ export default function TodoApp() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-6 px-3 sm:py-12 sm:px-4">
       <div className="max-w-xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between mb-1">
-            <h1 className="text-4xl font-extrabold text-indigo-600 dark:text-indigo-400 tracking-tight">
+            <h1 className="text-2xl sm:text-4xl font-extrabold text-indigo-600 dark:text-indigo-400 tracking-tight">
               ✅ Todo App
             </h1>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <ThemeToggle />
               {session?.user && (
                 <>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="hidden sm:inline text-sm text-gray-600 dark:text-gray-400">
                     {session.user.name ?? session.user.email}
                   </span>
                   <button
@@ -86,7 +89,7 @@ export default function TodoApp() {
               )}
             </div>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
             Your tasks, saved to your account
           </p>
         </div>
@@ -104,7 +107,7 @@ export default function TodoApp() {
                 <button
                   key={value}
                   onClick={() => setFilter(value)}
-                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3 sm:px-4 py-2 sm:py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     filter === value
                       ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm"
                       : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"

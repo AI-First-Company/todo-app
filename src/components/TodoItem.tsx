@@ -3,10 +3,22 @@
 import { useState, useRef, useEffect } from "react";
 import { Todo, Category } from "@/types/todo";
 
-const PRIORITY_COLORS = {
+const PRIORITY_COLORS: Record<string, string> = {
   low: "bg-green-100 text-green-700 border-green-300",
   medium: "bg-yellow-100 text-yellow-700 border-yellow-300",
   high: "bg-red-100 text-red-700 border-red-300",
+};
+
+const PRIORITY_ICONS: Record<string, string> = {
+  low: "🟢",
+  medium: "🟡",
+  high: "🔴",
+};
+
+const PRIORITY_BORDER: Record<string, string> = {
+  low: "",
+  medium: "",
+  high: "border-l-4 border-l-red-400 dark:border-l-red-500",
 };
 
 const CATEGORIES: Category[] = ["Work", "Personal", "Shopping", "Health", "Other"];
@@ -79,7 +91,7 @@ export default function TodoItem({
       overdue
         ? "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800"
         : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700"
-    }`}>
+    } ${PRIORITY_BORDER[todo.priority]}`}>
       {/* Checkbox */}
       <button
         onClick={() => onToggle(todo.id)}
@@ -117,9 +129,9 @@ export default function TodoItem({
                 onChange={(e) => setEditPriority(e.target.value as Todo["priority"])}
                 className="text-xs px-2 py-1 border border-gray-300 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none"
               >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
+                <option value="low">🟢 Low</option>
+                <option value="medium">🟡 Medium</option>
+                <option value="high">🔴 High</option>
               </select>
               <select
                 value={editCategory}
@@ -152,7 +164,7 @@ export default function TodoItem({
                 {todo.title}
               </span>
               <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${PRIORITY_COLORS[todo.priority]}`}>
-                {todo.priority}
+                {PRIORITY_ICONS[todo.priority]} {todo.priority}
               </span>
               {todo.category && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800">
