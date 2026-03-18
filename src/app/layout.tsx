@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { auth } from "@/auth";
 import SessionProvider from "@/components/SessionProvider";
@@ -6,6 +6,12 @@ import SessionProvider from "@/components/SessionProvider";
 export const metadata: Metadata = {
   title: "Todo App",
   description: "A fullstack todo app powered by localStorage",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({
