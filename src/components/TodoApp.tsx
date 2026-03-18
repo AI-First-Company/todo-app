@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useTodos } from "@/hooks/useTodos";
 import { useTemplates } from "@/hooks/useTemplates";
@@ -27,7 +27,7 @@ export default function TodoApp() {
   const { todos, hydrated, addTodo, toggleTodo, deleteTodo, editTodo, clearCompleted } =
     useTodos();
   const { templates, addTemplate, deleteTemplate } = useTemplates();
-  const handleUseTemplate = (template: Template) => { addTodo(template.title, template.priority, template.category); };
+  const handleUseTemplate = useCallback((template: Template) => { addTodo(template.title, template.priority, template.category ?? undefined); }, [addTodo]);
   const [filter, setFilter] = useState<FilterType>("all");
   const [categoryFilter, setCategoryFilter] = useState<Category | "all">("all");
 

@@ -17,6 +17,6 @@ export interface Template {
   name: string;
   title: string;
   priority: Priority;
-  category?: Category;
+  category: Category | null;
   createdAt: string;
 }

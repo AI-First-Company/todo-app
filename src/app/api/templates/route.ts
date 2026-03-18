@@ -24,7 +24,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
   const { name, title, priority, category } = body;
 
   if (!name || typeof name !== "string" || !name.trim()) {
@@ -32,6 +37,12 @@ export async function POST(request: NextRequest) {
   }
   if (!title || typeof title !== "string" || !title.trim()) {
     return NextResponse.json({ error: "title is required" }, { status: 400 });
+  }
+  if (name.trim().length > 200) {
+    return NextResponse.json({ error: "name must be 200 characters or fewer" }, { status: 400 });
+  }
+  if (title.trim().length > 200) {
+    return NextResponse.json({ error: "title must be 200 characters or fewer" }, { status: 400 });
   }
 
   const resolvedPriority = priority ?? "medium";

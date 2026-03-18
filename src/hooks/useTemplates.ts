@@ -50,17 +50,18 @@ export function useTemplates() {
   );
 
   const deleteTemplate = useCallback(async (id: string) => {
-    const previous = templates;
-    setTemplates((prev) => prev.filter((t) => t.id !== id));
+    let previous: Template[] = [];
+    setTemplates((prev) => {
+      previous = prev;
+      return prev.filter((t) => t.id !== id);
+    });
     try {
       const res = await fetch("/api/templates/" + id, { method: "DELETE" });
-      if (!res.ok) {
-        setTemplates(previous);
-      }
+      if (!res.ok) setTemplates(previous);
     } catch {
       setTemplates(previous);
     }
-  }, [templates]);
+  }, []);
 
   return { templates, loaded, addTemplate, deleteTemplate };
 }
