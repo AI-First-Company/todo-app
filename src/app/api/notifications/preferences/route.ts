@@ -34,7 +34,7 @@ export async function PUT(request: NextRequest) {
   if (enabled && (!emailAddress || typeof emailAddress !== "string" || !EMAIL_REGEX.test(emailAddress))) {
     return NextResponse.json({ error: "Valid email address is required" }, { status: 400 });
   }
-  if (!Array.isArray(remindAt) || remindAt.some((r: string) => !VALID_REMIND_AT.includes(r))) {
+  if (!Array.isArray(remindAt) || remindAt.length === 0 || remindAt.some((r: string) => !VALID_REMIND_AT.includes(r))) {
     return NextResponse.json({ error: "remindAt must be: " + VALID_REMIND_AT.join(", ") }, { status: 400 });
   }
   const pref = await prisma.notificationPreference.upsert({
