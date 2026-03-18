@@ -1,11 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useSession, signOut } from "next-auth/react";
 import { useTodos } from "@/hooks/useTodos";
 import AddTodoForm from "./AddTodoForm";
 import TodoItem from "./TodoItem";
-import ThemeToggle from "./ThemeToggle";
+import Header from "./Header";
 import { Todo, Category } from "@/types/todo";
 
 type FilterType = "all" | "active" | "completed";
@@ -21,7 +20,6 @@ const CATEGORY_ICONS: Record<Category, string> = {
 };
 
 export default function TodoApp() {
-  const { data: session } = useSession();
   const { todos, hydrated, addTodo, toggleTodo, deleteTodo, editTodo, clearCompleted } =
     useTodos();
   const [filter, setFilter] = useState<FilterType>("all");
@@ -61,35 +59,9 @@ export default function TodoApp() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 py-12 px-4">
       <div className="max-w-xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-1">
-            <h1 className="text-4xl font-extrabold text-indigo-600 dark:text-indigo-400 tracking-tight">
-              ✅ Todo App
-            </h1>
-            <div className="flex items-center gap-3">
-              <ThemeToggle />
-              {session?.user && (
-                <>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {session.user.name ?? session.user.email}
-                  </span>
-                  <button
-                    onClick={() => signOut({ callbackUrl: "/login" })}
-                    className="text-xs text-gray-400 hover:text-red-500 transition-colors"
-                  >
-                    Sign out
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Your tasks, saved to your account
-          </p>
-        </div>
+        <Header />
 
         {/* Add Form */}
         <div className="mb-6">
