@@ -6,13 +6,11 @@ import { useTodos } from "@/hooks/useTodos";
 import AddTodoForm from "./AddTodoForm";
 import TodoItem from "./TodoItem";
 import ThemeToggle from "./ThemeToggle";
-import { Todo, Category } from "@/types/todo";
+import { Todo, DEFAULT_CATEGORIES } from "@/types/todo";
 
 type FilterType = "all" | "active" | "completed";
 
-const CATEGORIES: Category[] = ["Work", "Personal", "Shopping", "Health", "Other"];
-
-const CATEGORY_ICONS: Record<Category, string> = {
+const CATEGORY_ICONS: Record<string, string> = {
   Work: "💼",
   Personal: "👤",
   Shopping: "🛒",
@@ -25,7 +23,14 @@ export default function TodoApp() {
   const { todos, hydrated, addTodo, toggleTodo, deleteTodo, editTodo, clearCompleted } =
     useTodos();
   const [filter, setFilter] = useState<FilterType>("all");
-  const [categoryFilter, setCategoryFilter] = useState<Category | "all">("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
+  const allCategories = useMemo(() => {
+    const customCats = todos
+      .map((t) => t.category)
+      .filter((c): c is string => !!c);
+    return Array.from(new Set([...DEFAULT_CATEGORIES, ...customCats]));
+  }, [todos]);
 
   const filteredTodos = useMemo(() => {
     return todos
@@ -38,16 +43,16 @@ export default function TodoApp() {
         return statusMatch && categoryMatch;
       })
       .sort((a, b) => {
-        // Items with due dates come before items without
+        const priorityRank: Record<string, number> = { high: 0, medium: 1, low: 2 };
+        const pDiff = priorityRank[a.priority] - priorityRank[b.priority];
+        if (pDiff !== 0) return pDiff;
         if (a.dueDate && !b.dueDate) return -1;
         if (!a.dueDate && b.dueDate) return 1;
-        // Both have due dates: sort soonest first
         if (a.dueDate && b.dueDate) {
           const diff = a.dueDate.localeCompare(b.dueDate);
           if (diff !== 0) return diff;
         }
-        // Fall back to creation date (newest first)
-        return b.createdAt - a.createdAt;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
   }, [todos, filter, categoryFilter]);
 
@@ -93,7 +98,7 @@ export default function TodoApp() {
 
         {/* Add Form */}
         <div className="mb-6">
-          <AddTodoForm onAdd={addTodo} />
+          <AddTodoForm onAdd={addTodo} categories={allCategories} />
         </div>
 
         {/* Filter Tabs + Stats */}
@@ -131,7 +136,7 @@ export default function TodoApp() {
             >
               📂 All
             </button>
-            {CATEGORIES.map((cat) => (
+            {allCategories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setCategoryFilter(cat)}
@@ -141,7 +146,7 @@ export default function TodoApp() {
                     : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
                 }`}
               >
-                {CATEGORY_ICONS[cat]} {cat}
+                {CATEGORY_ICONS[cat] ?? "🏷️"} {cat}
               </button>
             ))}
           </div>
@@ -169,6 +174,7 @@ export default function TodoApp() {
                   onToggle={toggleTodo}
                   onDelete={deleteTodo}
                   onEdit={editTodo}
+                  categories={allCategories}
                 />
               </div>
             ))}

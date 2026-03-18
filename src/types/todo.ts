@@ -1,6 +1,8 @@
 export type Priority = "low" | "medium" | "high";
 
-export type Category = "Work" | "Personal" | "Shopping" | "Health" | "Other";
+export const DEFAULT_CATEGORIES = ["Work", "Personal", "Shopping", "Health", "Other"] as const;
+
+export type Category = string;
 
 export interface Todo {
   id: string;

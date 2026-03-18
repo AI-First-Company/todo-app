@@ -1,15 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Todo, Category } from "@/types/todo";
+import { Todo, DEFAULT_CATEGORIES } from "@/types/todo";
 
-const PRIORITY_COLORS = {
-  low: "bg-green-100 text-green-700 border-green-300",
-  medium: "bg-yellow-100 text-yellow-700 border-yellow-300",
-  high: "bg-red-100 text-red-700 border-red-300",
+const PRIORITY_COLORS: Record<string, string> = {
+  low: "bg-green-100 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-300 dark:border-green-700",
+  medium: "bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-700",
+  high: "bg-red-100 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-700",
 };
-
-const CATEGORIES: Category[] = ["Work", "Personal", "Shopping", "Health", "Other"];
 
 interface TodoItemProps {
   todo: Todo;
@@ -22,6 +20,7 @@ interface TodoItemProps {
     category?: Todo["category"],
     dueDate?: string
   ) => void;
+  categories: string[];
 }
 
 function isOverdue(dueDate?: string): boolean {
@@ -39,13 +38,20 @@ export default function TodoItem({
   onToggle,
   onDelete,
   onEdit,
+  categories,
 }: TodoItemProps) {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(todo.title);
   const [editPriority, setEditPriority] = useState<Todo["priority"]>(todo.priority);
-  const [editCategory, setEditCategory] = useState<Todo["category"] | "">(todo.category ?? "");
+  const [editCategory, setEditCategory] = useState(todo.category ?? "");
   const [editDueDate, setEditDueDate] = useState(todo.dueDate ?? "");
+  const [showCatDropdown, setShowCatDropdown] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const allCategories = Array.from(new Set([...DEFAULT_CATEGORIES, ...categories]));
+  const filteredCats = editCategory
+    ? allCategories.filter((c) => c.toLowerCase().includes(editCategory.toLowerCase()))
+    : allCategories;
 
   useEffect(() => {
     if (editing) inputRef.current?.focus();
@@ -53,7 +59,7 @@ export default function TodoItem({
 
   const saveEdit = () => {
     if (editTitle.trim()) {
-      onEdit(todo.id, editTitle, editPriority, editCategory || undefined, editDueDate || undefined);
+      onEdit(todo.id, editTitle, editPriority, editCategory.trim() || undefined, editDueDate || undefined);
     } else {
       setEditTitle(todo.title);
       setEditPriority(todo.priority);
@@ -117,20 +123,43 @@ export default function TodoItem({
                 onChange={(e) => setEditPriority(e.target.value as Todo["priority"])}
                 className="text-xs px-2 py-1 border border-gray-300 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none"
               >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
+                <option value="low">🟢 Low</option>
+                <option value="medium">🟡 Medium</option>
+                <option value="high">🔴 High</option>
               </select>
-              <select
-                value={editCategory}
-                onChange={(e) => setEditCategory(e.target.value as Todo["category"] | "")}
-                className="text-xs px-2 py-1 border border-gray-300 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none"
-              >
-                <option value="">No category</option>
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={editCategory}
+                  onChange={(e) => {
+                    setEditCategory(e.target.value);
+                    setShowCatDropdown(true);
+                  }}
+                  onFocus={() => setShowCatDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowCatDropdown(false), 150)}
+                  placeholder="Category"
+                  className="text-xs px-2 py-1 w-28 border border-gray-300 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none"
+                />
+                {showCatDropdown && filteredCats.length > 0 && (
+                  <ul className="absolute z-10 mt-1 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-32 overflow-y-auto">
+                    {filteredCats.map((c) => (
+                      <li key={c}>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setEditCategory(c);
+                            setShowCatDropdown(false);
+                          }}
+                          className="w-full text-left px-2 py-1 text-xs text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-gray-700"
+                        >
+                          {c}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
               <input
                 type="date"
                 value={editDueDate}
