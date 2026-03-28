@@ -24,6 +24,7 @@ model Todo {
   priority  String   @default("medium")
   category  String?
   dueDate   String?
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   userId    String?

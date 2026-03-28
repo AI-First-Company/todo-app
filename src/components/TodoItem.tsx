@@ -22,6 +22,7 @@ interface TodoItemProps {
     category?: Todo["category"],
     dueDate?: string
   ) => void;
+  isDraggable?: boolean;
 }
 
 function isOverdue(dueDate?: string): boolean {
@@ -39,6 +40,7 @@ export default function TodoItem({
   onToggle,
   onDelete,
   onEdit,
+  isDraggable = false,
 }: TodoItemProps) {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(todo.title);
@@ -80,6 +82,17 @@ export default function TodoItem({
         ? "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800"
         : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700"
     }`}>
+      {/* Drag Handle */}
+      {isDraggable && (
+        <div className="flex-shrink-0 mt-1 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400">
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
+            <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
+            <circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" />
+          </svg>
+        </div>
+      )}
+
       {/* Checkbox */}
       <button
         onClick={() => onToggle(todo.id)}
